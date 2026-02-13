@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Create a clean workspace
-mkdir -p test-project/src
-cd test-project
+mkdir -p /app/test-project/src
+cd /app/test-project
 
 # 1. Create the 'source' file that the cloner will hold
 echo "This content was passed via a bind mount!" > src/hello.txt
