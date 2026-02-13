@@ -1,0 +1,46 @@
+# syntax=docker/dockerfile:1
+
+ARG GIT_IMAGE=alpine/git:v2.52.0@sha256:3b7890cb947afd3f71adab55aa6b549ad0f8ddc4b9ed28b027563d73d49d8e11
+ARG GO_IMAGE=dhi.io/golang:1.26-alpine3.23-sfw-ent-dev@sha256:916f1e30f9c4921d8835f60bad1f688772eea779df736ab3e246c3dd9f1ba658
+ARG  BUSYBOX_IMAGE=dhi.io/busybox:1-alpine3.22-dev@sha256:f4d4423cff0514170650efa0755f1db439b7ec91439305781fddb239dc78a04d
+
+
+FROM ${GIT_IMAGE} AS cloner
+
+USER root
+
+WORKDIR /src
+
+RUN git clone --depth 1 --branch master https://github.com/jrdtechjourney/test.git
+
+FROM ${GO_IMAGE} AS build
+
+RUN --mount=type=cache,target=/var/cache/apk \
+  ln -vs /var/cache/apk /etc/apk/cache && \
+  apk add --no-cache bash
+
+SHELL [ "/bin/bash", "-c"]
+
+RUN --mount=type=bind,from=cloner,source=/src,target=/build,rw \
+  cd /build/test && \
+  bash test-mount-syntax.sh
+
+FROM ${BUSYBOX_IMAGE}
+#FROM ${GO_IMAGE} AS runtime
+
+RUN --mount=type=cache,target=/var/cache/apk \
+  ln -vs /var/cache/apk /etc/apk/cache && \
+  apk add --no-cache bash
+
+SHELL [ "/bin/bash", "-c"]
+
+COPY --from=build --chmod=775 /app/test-project /app/test-project
+
+
+VOLUME [ "/app" ]
+
+ENV HOME="/app"
+
+WORKDIR ${HOME}
+
+
